@@ -14,7 +14,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install pgatourPY
-        run: pip install https://github.com/WalrusQuant/pgatourPY/archive/refs/heads/main.zip
+        run: pip install git+https://github.com/WalrusQuant/pgatourPY.git
 
       - name: Test PGA leaderboard
         run: |
@@ -23,8 +23,8 @@ jobs:
 
           print("Testing PGA Tour API...")
 
-          data = pga.pga_leaderboard()
+          data = pga.pga_leaderboard("R2026475")
 
-          print(data)
+          print(data.to_string())
           print("\nSUCCESS - PGA Tour data was retrieved!")
           PY
