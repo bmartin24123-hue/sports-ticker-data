@@ -1,4 +1,4 @@
-name: Test Current PGA Tournament
+name: Test Current PGA Leaderboard
 
 on:
   workflow_dispatch:
@@ -16,31 +16,37 @@ jobs:
       - name: Install pgatourPY
         run: pip install git+https://github.com/WalrusQuant/pgatourPY.git
 
-      - name: Find current PGA tournament
+      - name: Find current tournament and leaderboard
         run: |
           python - <<'PY'
           import pgatourpy as pga
-          from datetime import datetime
 
           print("Getting PGA schedule...")
 
           schedule = pga.pga_schedule()
 
-          print("\nLooking for current tournament...")
+          current = schedule[
+              schedule["status"].str.upper() == "IN_PROGRESS"
+          ]
 
-          today = datetime.now().date()
+          if current.empty:
+              print("No PGA tournament is currently in progress.")
+              raise SystemExit(0)
 
-          for _, row in schedule.iterrows():
-              print(
-                  row["tournament_id"],
-                  "|",
-                  row["tournament_name"],
-                  "|",
-                  row["display_date"],
-                  "|",
-                  row["status"]
-              )
+          tournament = current.iloc[0]
 
-          print("\nSchedule retrieved successfully!")
-          print("Number of tournaments:", len(schedule))
+          tournament_id = tournament["tournament_id"]
+          tournament_name = tournament["tournament_name"]
+
+          print(f"\nCurrent tournament: {tournament_name}")
+          print(f"Tournament ID: {tournament_id}")
+
+          print("\nGetting leaderboard...")
+
+          leaderboard = pga.pga_leaderboard(tournament_id)
+
+          print("\nLEADERBOARD:")
+          print(leaderboard.to_string(index=False))
+
+          print("\nSUCCESS - Current PGA leaderboard retrieved!")
           PY
