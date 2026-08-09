@@ -1,0 +1,30 @@
+name: Test PGA Tour API
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-pga:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pgatourPY
+        run: pip install pgatourPY
+
+      - name: Test PGA leaderboard
+        run: |
+          python - <<'PY'
+          import pgatourpy as pga
+
+          print("Testing PGA Tour API...")
+
+          data = pga.pga_leaderboard()
+
+          print(data)
+          print("\nSUCCESS - PGA Tour data was retrieved!")
+          PY
