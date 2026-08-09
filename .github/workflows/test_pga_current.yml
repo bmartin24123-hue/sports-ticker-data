@@ -1,4 +1,4 @@
-name: Test Current PGA Leaderboard
+name: Test PGA Data Generator
 
 on:
   workflow_dispatch:
@@ -8,6 +8,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -16,37 +19,8 @@ jobs:
       - name: Install pgatourPY
         run: pip install git+https://github.com/WalrusQuant/pgatourPY.git
 
-      - name: Find current tournament and leaderboard
-        run: |
-          python - <<'PY'
-          import pgatourpy as pga
+      - name: Generate PGA data
+        run: python scripts/update_pga.py
 
-          print("Getting PGA schedule...")
-
-          schedule = pga.pga_schedule()
-
-          current = schedule[
-              schedule["status"].str.upper() == "IN_PROGRESS"
-          ]
-
-          if current.empty:
-              print("No PGA tournament is currently in progress.")
-              raise SystemExit(0)
-
-          tournament = current.iloc[0]
-
-          tournament_id = tournament["tournament_id"]
-          tournament_name = tournament["tournament_name"]
-
-          print(f"\nCurrent tournament: {tournament_name}")
-          print(f"Tournament ID: {tournament_id}")
-
-          print("\nGetting leaderboard...")
-
-          leaderboard = pga.pga_leaderboard(tournament_id)
-
-          print("\nLEADERBOARD:")
-          print(leaderboard.to_string(index=False))
-
-          print("\nSUCCESS - Current PGA leaderboard retrieved!")
-          PY
+      - name: Show generated JSON
+        run: cat site/pga.json
