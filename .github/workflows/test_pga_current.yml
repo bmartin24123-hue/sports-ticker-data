@@ -1,0 +1,31 @@
+name: Test Current PGA Tournament
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-pga:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pgatourPY
+        run: pip install git+https://github.com/WalrusQuant/pgatourPY.git
+
+      - name: Find current PGA tournament
+        run: |
+          python - <<'PY'
+          import pgatourpy as pga
+
+          print("Checking available PGA tournaments...")
+
+          data = pga.pga_schedule()
+
+          print(data.to_string())
+
+          print("\nSUCCESS - PGA schedule retrieved!")
+          PY
