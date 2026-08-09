@@ -20,12 +20,27 @@ jobs:
         run: |
           python - <<'PY'
           import pgatourpy as pga
+          from datetime import datetime
 
-          print("Checking available PGA tournaments...")
+          print("Getting PGA schedule...")
 
-          data = pga.pga_schedule()
+          schedule = pga.pga_schedule()
 
-          print(data.to_string())
+          print("\nLooking for current tournament...")
 
-          print("\nSUCCESS - PGA schedule retrieved!")
+          today = datetime.now().date()
+
+          for _, row in schedule.iterrows():
+              print(
+                  row["tournament_id"],
+                  "|",
+                  row["tournament_name"],
+                  "|",
+                  row["display_date"],
+                  "|",
+                  row["status"]
+              )
+
+          print("\nSchedule retrieved successfully!")
+          print("Number of tournaments:", len(schedule))
           PY
