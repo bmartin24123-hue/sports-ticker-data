@@ -31,11 +31,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: "3.12"
+
+      - name: Install pgatourPY
+        run: pip install git+https://github.com/WalrusQuant/pgatourPY.git
 
       - name: Fetch PGA leaderboard
-        run: |
-          python scripts/update_pga.py
+        run: python scripts/update_pga.py
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
