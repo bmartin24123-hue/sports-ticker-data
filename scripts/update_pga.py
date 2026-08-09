@@ -1,90 +1,58 @@
 import json
-import urllib.request
+import os
 from datetime import datetime, timezone
 
-ESPN_URL = "https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard"
+import pgatourpy
+
 
 OUTPUT_FILE = "site/pga.json"
 
 
-def fetch_espn():
-    request = urllib.request.Request(
-        ESPN_URL,
-        headers={
-            "User-Agent": "Mozilla/5.0",
-            "Accept": "application/json",
-        }
-    )
+def get_current_tournament():
+    schedule = pgatourpy.pga_schedule()
 
-    with urllib.request.urlopen(request, timeout=30) as response:
-        return json.loads(response.read().decode("utf-8"))
+    current = schedule[
+        schedule["status"].str.upper() == "IN_PROGRESS"
+    ]
 
-
-def get_current_event(data):
-    events = data.get("events", [])
-
-    if not events:
+    if current.empty:
         return None
 
-    # ESPN normally puts the current/recent tournament here.
-    # Prefer an event that is currently underway.
-    for event in events:
-        competition = event.get("competitions", [{}])[0]
-        status = competition.get("status", {})
-        state = status.get("type", {}).get("state")
-
-        if state == "in":
-            return event
-
-    # If nothing is currently live, use the first event.
-    return events[0]
+    return current.iloc[0]
 
 
-def get_player_data(competitor):
-    athlete = competitor.get("athlete", {})
+def get_leaderboard(tournament_id):
+    return pgatourpy.pga_leaderboard(tournament_id)
 
-    name = athlete.get("fullName", "")
-    score = competitor.get("score", "")
 
-    # Current round / holes completed
-    linescores = competitor.get("linescores", [])
+def clean_leaderboard(leaderboard):
+    players = []
 
-    thru = 0
-    current_round = None
+    for _, row in leaderboard.iterrows():
 
-    if linescores:
-        current_round = linescores[-1]
-        round_holes = current_round.get("linescores", [])
+        player = {
+            "name": str(row["display_name"]),
+            "position": str(row["position"]),
+            "score": str(row["total"]),
+            "thru": str(row["thru"]),
+            "state": str(row["player_state"])
+        }
 
-        if round_holes:
-            thru = len(round_holes)
+        players.append(player)
 
-    # ESPN's "order" is its leaderboard ordering.
-    position = competitor.get("order")
-
-    # Convert score to an integer when possible
-    score_value = None
-
-    if score:
-        try:
-            score_value = int(score.replace("+", ""))
-        except ValueError:
-            score_value = score
-
-    return {
-        "name": name,
-        "position": position,
-        "score": score_value,
-        "thru": thru,
-    }
+    return players
 
 
 def main():
-    data = fetch_espn()
 
-    event = get_current_event(data)
+    print("Getting PGA schedule...")
 
-    if event is None:
+    tournament = get_current_tournament()
+
+    if tournament is None:
+
+        print("No PGA tournament is currently in progress.")
+
         output = {
             "updated": datetime.now(timezone.utc).isoformat(),
             "tournament": None,
@@ -93,38 +61,35 @@ def main():
         }
 
     else:
-        competition = event.get("competitions", [{}])[0]
 
-        competitors = competition.get("competitors", [])
+        tournament_id = tournament["tournament_id"]
+        tournament_name = tournament["tournament_name"]
 
-        players = [
-            get_player_data(player)
-            for player in competitors
-        ]
+        print(f"Current tournament: {tournament_name}")
+        print(f"Tournament ID: {tournament_id}")
 
-        # Keep the leaderboard order ESPN gives us
-        players = [
-            player for player in players
-            if player["name"]
-        ]
+        print("Getting leaderboard...")
 
-        status = competition.get("status", {})
-        status_type = status.get("type", {})
+        leaderboard = get_leaderboard(tournament_id)
+
+        players = clean_leaderboard(leaderboard)
 
         output = {
             "updated": datetime.now(timezone.utc).isoformat(),
-            "tournament": event.get("name"),
-            "status": status_type.get("description", ""),
+            "tournament": tournament_name,
+            "status": "IN_PROGRESS",
             "players": players
         }
 
-    # Make sure the output directory exists
-    import os
     os.makedirs("site", exist_ok=True)
 
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        json.dump(output, f, separators=(",", ":"))
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as file:
+        json.dump(output, file, separators=(",", ":"))
 
+    print("\nGenerated:")
+    print(OUTPUT_FILE)
+
+    print("\nData:")
     print(json.dumps(output, indent=2))
 
 
