@@ -56,6 +56,7 @@ def main():
         output = {
             "updated": datetime.now(timezone.utc).isoformat(),
             "tournament": None,
+            "dates": None,
             "status": "NO_EVENT",
             "players": []
         }
@@ -64,9 +65,11 @@ def main():
 
         tournament_id = tournament["tournament_id"]
         tournament_name = tournament["tournament_name"]
+        tournament_dates = tournament["display_date"]
 
         print(f"Current tournament: {tournament_name}")
         print(f"Tournament ID: {tournament_id}")
+        print(f"Tournament dates: {tournament_dates}")
 
         print("Getting leaderboard...")
 
@@ -77,6 +80,7 @@ def main():
         output = {
             "updated": datetime.now(timezone.utc).isoformat(),
             "tournament": tournament_name,
+            "dates": str(tournament_dates),
             "status": "IN_PROGRESS",
             "players": players
         }
